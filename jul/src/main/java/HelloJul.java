@@ -1,13 +1,21 @@
+import io.github.hurynovich.log.jul.LogConfig;
+
 import java.util.logging.Handler;
 import java.util.logging.Level;
-import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 public class HelloJul {
+    /*
+    * Configure logger system out logger
+    */
+    static {
+        LogConfig.reloadLogConfig();
+    }
+
     //create single logger per class
     private static Logger log = Logger.getLogger(HelloJul.class.getCanonicalName());
     
-    public void sayHello(){
+    public static void sayHello(){
         log.log(Level.SEVERE, ":)");
         log.setLevel(Level.ALL);
 
@@ -19,12 +27,16 @@ public class HelloJul {
         String msg = "Hello, this is log message.";
         log.log(Level.SEVERE, msg);
         log.log(Level.WARNING, msg);
-        log.log(Level.INFO, msg, new NullPointerException());
+        log.log(Level.INFO, msg);
         log.log(Level.CONFIG, msg);
         log.log(Level.FINE, msg);
         log.log(Level.FINER, msg);
         log.log(Level.FINEST, msg);
-
-
     }
+
+    public static void main(String[] args) {
+
+        sayHello();
+    }
+
 }
