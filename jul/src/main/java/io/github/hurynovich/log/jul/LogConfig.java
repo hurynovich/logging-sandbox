@@ -1,5 +1,6 @@
 package io.github.hurynovich.log.jul;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -9,10 +10,26 @@ import static java.lang.String.format;
 
 public final class LogConfig {
     /**
-     * Reloads logging config from 'logging.properties' file.
+     * Custom property which can be used in logging configuration.
+     * If this property is 'true' then new {@link Handler} is added to root logger which uses
+     * {@link System#out} for output;
+     */
+    public static final String SYSTEM_OUT_HANDLER_PROPERTY = "system.out.handler.active";
+
+    public static final String DEFAULT_CONFIG_PROD = "/logging.properties";
+    public static final String DEFAULT_CONFIG_TEST = "/logging-test.properties";
+
+    /**
+     * Reloads logging config from '/logging-test.properties' file if it is present otherwise
+     * reloads config from '/logging.properties'.
      */
     public static void reloadConfig(){
-        reloadConfig(LogConfig.class.getClassLoader(), "/logging.properties");
+        var loader = LogConfig.class;
+        if(isResourcePresent(loader, DEFAULT_CONFIG_TEST)){
+            reloadConfig(loader, DEFAULT_CONFIG_TEST);
+        } else {
+            reloadConfig(loader, DEFAULT_CONFIG_PROD);
+        }
     }
 
     /**
@@ -21,7 +38,7 @@ public final class LogConfig {
      * @param loader - used to load file content from classpath.
      * @param configPath - path to configuration file within classpath.
      */
-    public static void reloadConfig(ClassLoader loader, String configPath){
+    public static void reloadConfig(Class<?> loader, String configPath){
         InputStream res = loader.getResourceAsStream(configPath);
         if (res == null){
             Logger.getGlobal().severe(format("'%s' file was not found in classpath.%n", configPath));
@@ -30,17 +47,22 @@ public final class LogConfig {
 
         try (InputStream conf = res){
             //reload config
-            LogManager.getLogManager().updateConfiguration(conf, LogConfig::getReplaceAllMapper);
+            var mng = LogManager.getLogManager();
+            mng.updateConfiguration(conf, LogConfig::getReplaceAllMapper);
 
-            //add handler to print in System.out if nothing defined
-            Logger root = Logger.getLogger("");
-            if(root.getHandlers().length == 0){
+            //add custom stream handlers
+            var prop = mng.getProperty(SYSTEM_OUT_HANDLER_PROPERTY);
+            if(prop != null && prop.strip().equalsIgnoreCase("true")){
+                Logger root = Logger.getLogger("");
                 Handler sysoutHandler = new StreamHandler(System.out, new SimpleFormatter());
                 root.addHandler(sysoutHandler);
             }
         } catch (Exception e) {
             Logger.getGlobal().log(Level.SEVERE, format("Failed to reload logging config from '%s' file.", configPath), e);
+            return;
         }
+
+        Logger.getGlobal().config(format("Logging config was successfully reloaded from '%s' file.", configPath));
     }
 
     /**
@@ -49,5 +71,13 @@ public final class LogConfig {
      */
     private static BiFunction<String, String, String> getReplaceAllMapper(String key) {
         return (oldVal, newVal) -> newVal;
-    };
+    }
+
+    private static boolean isResourcePresent(Class<?> loader, String resourcePath){
+        try(var res = loader.getResourceAsStream(resourcePath)){
+            return res != null;
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }
