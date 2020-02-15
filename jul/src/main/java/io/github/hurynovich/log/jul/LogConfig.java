@@ -1,6 +1,5 @@
 package io.github.hurynovich.log.jul;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -25,11 +24,12 @@ public final class LogConfig {
             //reload config
             LogManager.getLogManager().updateConfiguration(conf, REPLACE_All_MAPPER );
 
-            //add handler to print in System.out
-            Handler sysoutHandler = new StreamHandler(System.out, new SimpleFormatter());
-            sysoutHandler.setLevel(Level.ALL);
+            //add handler to print in System.out if nothing defined
             Logger root = Logger.getLogger("");
-            root.addHandler(sysoutHandler);
+            if(root.getHandlers().length == 0){
+                Handler sysoutHandler = new StreamHandler(System.out, new SimpleFormatter());
+                root.addHandler(sysoutHandler);
+            }
         } catch (Exception e) {
             System.err.print("Failed to reload Logger config. " + e.getMessage());
         }
