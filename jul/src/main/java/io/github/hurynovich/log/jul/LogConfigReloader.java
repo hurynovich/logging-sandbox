@@ -1,6 +1,5 @@
 package io.github.hurynovich.log.jul;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -8,7 +7,7 @@ import java.util.logging.*;
 
 import static java.lang.String.format;
 
-public final class LogConfig {
+public final class LogConfigReloader {
     /**
      * Custom property which can be used in logging configuration.
      * If this property is 'true' then new {@link Handler} is added to root logger which uses
@@ -24,7 +23,7 @@ public final class LogConfig {
      * reloads config from '/logging.properties'.
      */
     public static void reloadConfig(){
-        var loader = LogConfig.class;
+        var loader = LogConfigReloader.class;
         if(isResourcePresent(loader, DEFAULT_CONFIG_TEST)){
             reloadConfig(loader, DEFAULT_CONFIG_TEST);
         } else {
@@ -48,7 +47,7 @@ public final class LogConfig {
         try (InputStream conf = res){
             //reload config
             var mng = LogManager.getLogManager();
-            mng.updateConfiguration(conf, LogConfig::getReplaceAllMapper);
+            mng.updateConfiguration(conf, LogConfigReloader::getReplaceAllMapper);
 
             //add custom stream handlers
             var prop = mng.getProperty(SYSTEM_OUT_HANDLER_PROPERTY);
