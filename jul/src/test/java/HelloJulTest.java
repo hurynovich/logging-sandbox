@@ -1,3 +1,4 @@
+import io.github.hurynovich.log.jul.HelloJul;
 import org.junit.Test;
 
 import java.util.logging.Handler;

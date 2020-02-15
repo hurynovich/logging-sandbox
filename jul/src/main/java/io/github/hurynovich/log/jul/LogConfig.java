@@ -5,24 +5,32 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.logging.*;
 
+import static java.lang.String.format;
+
 public final class LogConfig {
     /**
-     * Mapper which always choices value from new config for any key.
+     * Reloads logging config from 'logging.properties' file.
      */
-    private final static Function<String, BiFunction<String, String, String>> REPLACE_All_MAPPER = (key) -> {
-        return (oldVal, newVal) -> newVal;
-    };
+    public static void reloadConfig(){
+        reloadConfig(LogConfig.class.getClassLoader(), "/logging.properties");
+    }
 
-    public static void reloadLogConfig(){
-        InputStream res = LogConfig.class.getResourceAsStream("/logging.properties");
+    /**
+     * Reloads logging config from file placed in classpath.
+     *
+     * @param loader - used to load file content from classpath.
+     * @param configPath - path to configuration file within classpath.
+     */
+    public static void reloadConfig(ClassLoader loader, String configPath){
+        InputStream res = loader.getResourceAsStream(configPath);
         if (res == null){
-            System.err.println("'logging.properties' file was not found in classpath.");
+            Logger.getGlobal().severe(format("'%s' file was not found in classpath.%n", configPath));
             return;
         }
 
         try (InputStream conf = res){
             //reload config
-            LogManager.getLogManager().updateConfiguration(conf, REPLACE_All_MAPPER );
+            LogManager.getLogManager().updateConfiguration(conf, LogConfig::getReplaceAllMapper);
 
             //add handler to print in System.out if nothing defined
             Logger root = Logger.getLogger("");
@@ -31,7 +39,15 @@ public final class LogConfig {
                 root.addHandler(sysoutHandler);
             }
         } catch (Exception e) {
-            System.err.print("Failed to reload Logger config. " + e.getMessage());
+            Logger.getGlobal().log(Level.SEVERE, format("Failed to reload logging config from '%s' file.", configPath), e);
         }
     }
+
+    /**
+     * This method is used as mapper in {@link LogManager#updateConfiguration(Function)}.
+     * And it overrides all old values by new values.
+     */
+    private static BiFunction<String, String, String> getReplaceAllMapper(String key) {
+        return (oldVal, newVal) -> newVal;
+    };
 }
