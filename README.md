@@ -1,1 +1,2 @@
-* Project to experiment with different java loggers.
+# logging-experiments
+Project to experiment with different java loggers.
